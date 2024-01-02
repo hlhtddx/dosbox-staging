@@ -1244,6 +1244,7 @@ void DOSBOX_Init()
 	secprop->AddInitFunction(&DRIVES_Init);
 	secprop->AddInitFunction(&CDROM_Image_Init);
 
+        secprop->AddInitFunction(&MOUSE_DosDriver_Init);
 #if C_IPX
 	secprop = control->AddSection_prop("ipx", &IPX_Init, changeable_at_runtime);
 #else
