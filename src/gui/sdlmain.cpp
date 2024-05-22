@@ -4641,8 +4641,9 @@ int sdl_main(int argc, char* argv[])
 
 	loguru::init(argc, argv);
 
-	LOG_MSG("%s version %s", DOSBOX_PROJECT_NAME, DOSBOX_GetDetailedVersion());
-	LOG_MSG("---");
+	LOG_MSG("----------------------------------------------------------------");
+	LOG_MSG("%s - version %s", DOSBOX_NAME, DOSBOX_GetDetailedVersion());
+	LOG_MSG("----------------------------------------------------------------");
 
 	LOG_MSG("LOG: Loguru version %d.%d.%d initialised",
 	        LOGURU_VERSION_MAJOR,

@@ -696,7 +696,6 @@ namespace loguru
 			VLOG_F(g_internal_verbosity, "Current dir: " LOGURU_FMT(s) "", s_current_dir);
 		}
 		VLOG_F(g_internal_verbosity, "stderr verbosity: " LOGURU_FMT(d) "", g_stderr_verbosity);
-		VLOG_F(g_internal_verbosity, "-----------------------------------");
 
 		install_signal_handlers(options.signal_options);
 
