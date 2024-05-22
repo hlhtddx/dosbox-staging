@@ -1106,8 +1106,7 @@ std::string Section_line::GetPropValue(const std::string&) const
 
 bool Config::WriteConfig(const std_fs::path& path) const
 {
-	char temp[50];
-	char helpline[256];
+	char buf[8192];
 
 	FILE* outfile = fopen(path.string().c_str(), "w+t");
 	if (!outfile) {
@@ -1120,9 +1119,9 @@ bool Config::WriteConfig(const std_fs::path& path) const
 
 	for (auto tel = sectionlist.cbegin(); tel != sectionlist.cend(); ++tel) {
 		// Print section header
-		safe_strcpy(temp, (*tel)->GetName());
-		lowcase(temp);
-		fprintf(outfile, "[%s]\n", temp);
+		safe_strcpy(buf, (*tel)->GetName());
+		lowcase(buf);
+		fprintf(outfile, "[%s]\n", buf);
 
 		Section_prop* sec = dynamic_cast<Section_prop*>(*tel);
 		if (sec) {
@@ -1196,23 +1195,23 @@ bool Config::WriteConfig(const std_fs::path& path) const
 				fprintf(outfile, "\n");
 			}
 		} else {
-			upcase(temp);
-			strcat(temp, "_CONFIGFILE_HELP");
+			upcase(buf);
+			strcat(buf, "_CONFIGFILE_HELP");
 
-			const char* helpstr   = MSG_GetRaw(temp);
+			const char* helpstr   = MSG_GetRaw(buf);
 			const char* linestart = helpstr;
-			char* helpwrite       = helpline;
+			char* helpwrite       = buf;
 
 			while (*helpstr && static_cast<size_t>(helpstr - linestart) <
-			                           sizeof(helpline)) {
+			                           sizeof(buf)) {
 				*helpwrite++ = *helpstr;
 
 				if (*helpstr == '\n') {
 					*helpwrite = 0;
 
-					fprintf(outfile, "# %s", helpline);
+					fprintf(outfile, "# %s", buf);
 
-					helpwrite = helpline;
+					helpwrite = buf;
 					linestart = ++helpstr;
 				} else {
 					++helpstr;
