@@ -1333,10 +1333,23 @@ void DOSBOX_Init()
 	        "Lines in this section will be run at startup.\n"
 	        "You can put your MOUNT lines here.\n");
 
+	LOG_MSG("%s version %s", DOSBOX_NAME, DOSBOX_GetDetailedVersion());
 	MSG_Add("CONFIGFILE_INTRO",
-	        "# This is the configuration file for " DOSBOX_PROJECT_NAME
-	        " (%s).\n"
-	        "# Lines starting with a '#' character are comments.\n");
+	        format_str("# This is the primary (global) configuration file for %s version %s.\n"
+	                   "# Lines starting with a '#' character are comments and are ignored.\n"
+	                   "#\n"
+	                   "# It is recommended to treat this as a global configuration and make only\n"
+	                   "# minimal changes to it, then set up local 'dosbox.conf' files in your\n"
+	                   "# individual game folders. The local 'dosbox.conf' configs will be applied\n"
+	                   "# on top of this primary config whenever you start a game. This makes it\n"
+	                   "# possible to create very short per-game configs that only override the\n"
+	                   "# settings the game needs, and these short configs are much easier to\n"
+	                   "# maintain (especially when the configuration format changes).\n"
+	                   "#\n"
+	                   "# See the Getting Started guide for detailed steps on how to do this:\n"
+	                   "#\n"
+	                   "# http://dosbox-staging.github.io/getting-started\n",
+	                   DOSBOX_NAME).c_str());
 
 	MSG_Add("CONFIG_VALID_VALUES", "Possible values");
 	MSG_Add("CONFIG_DEPRECATED_VALUES", "Deprecated values");
