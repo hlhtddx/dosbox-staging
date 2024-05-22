@@ -2386,7 +2386,7 @@ void sync_modern_cycles_settings()
 {
 	auto& conf = modern_cycles_config;
 
-	const auto cycles_val = [] {
+	const auto cycles_val = [&] {
 		if (conf.real_mode) {
 			return format_str("%d", *conf.real_mode);
 		} else {
@@ -2396,7 +2396,7 @@ void sync_modern_cycles_settings()
 
 	set_section_property_value("cpu", "cpu_cycles", cycles_val);
 
-	const auto cycles_protected_val = [] {
+	const auto cycles_protected_val = [&] {
 		if (conf.protected_mode_auto) {
 			return std::string("auto");
 		} else if (conf.protected_mode) {
