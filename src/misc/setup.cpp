@@ -1113,9 +1113,10 @@ bool Config::WriteConfig(const std_fs::path& path) const
 		return false;
 	}
 
-	// Print start of config file and add a return to improve readibility
-	fprintf(outfile, MSG_GetRaw("CONFIGFILE_INTRO"), DOSBOX_VERSION);
-	fprintf(outfile, "\n");
+	auto a = MSG_GetRaw("CONFIGFILE_INTRO");
+	LOG_DEBUG(a);
+//	fprintf(outfile, MSG_GetRaw("CONFIGFILE_INTRO"), DOSBOX_VERSION);
+//	fprintf(outfile, "\n");
 
 	for (auto tel = sectionlist.cbegin(); tel != sectionlist.cend(); ++tel) {
 		// Print section header
