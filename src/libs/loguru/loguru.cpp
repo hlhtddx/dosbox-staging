@@ -266,6 +266,47 @@ namespace loguru
 	static void print_preamble_header(char* out_buff, size_t out_buff_size);
 
 	// ------------------------------------------------------------------------------
+	// UTF-8 output
+
+	template <typename... Arguments>
+	int fprintf_utf8(FILE *stream, const char* format, Arguments... arguments)
+	{
+	#ifdef WIN32
+		if (stream != stdout && stream != stderr) {
+			// No need to alter console settings if writing to file
+			#pragma GCC diagnostic push
+			#pragma GCC diagnostic ignored "-Wformat-security"
+			return fprintf(stream, format, arguments...);
+			#pragma GCC diagnostic pop
+		}
+
+		constexpr uint16_t CodePageUtf8 = 65001;
+
+		const auto old_code_page = GetConsoleOutputCP();
+		SetConsoleOutputCP(CodePageUtf8);
+		int result = {};
+		try {
+			#pragma GCC diagnostic push
+			#pragma GCC diagnostic ignored "-Wformat-security"
+			result = fprintf(stream, format, arguments...);
+			#pragma GCC diagnostic pop
+		} catch (...) {
+			SetConsoleOutputCP(old_code_page);
+			throw;
+		}
+
+		SetConsoleOutputCP(old_code_page);
+		return result;
+	#else
+		// Assume any OS without special support uses UTF-8 as console encoding
+		#pragma GCC diagnostic push
+		#pragma GCC diagnostic ignored "-Wformat-security"
+		return fprintf(stream, format, arguments...);
+		#pragma GCC diagnostic pop
+	#endif
+	}
+
+	// ------------------------------------------------------------------------------
 	// Colors
 
 	bool terminal_has_color() { return s_terminal_has_color; }
@@ -327,8 +368,11 @@ namespace loguru
 #else
 		FILE* file = to_file(user_data);
 #endif
-		fprintf(file, "%s%s%s%s\n",
-			message.preamble, message.indentation, message.prefix, message.message);
+		fprintf_utf8(file, "%s%s%s%s\n",
+		             message.preamble,
+		             message.indentation,
+		             message.prefix,
+		             message.message);
 		if (g_flush_interval_ms == 0) {
 			fflush(file);
 		}
@@ -683,9 +727,9 @@ namespace loguru
 				char preamble_explain[LOGURU_PREAMBLE_WIDTH];
 				print_preamble_header(preamble_explain, sizeof(preamble_explain));
 				if (g_colorlogtostderr && s_terminal_has_color) {
-					fprintf(stderr, "%s%s%s\n", terminal_reset(), terminal_dim(), preamble_explain);
+					fprintf_utf8(stderr, "%s%s%s\n", terminal_reset(), terminal_dim(), preamble_explain);
 				} else {
-					fprintf(stderr, "%s\n", preamble_explain);
+					fprintf_utf8(stderr, "%s\n", preamble_explain);
 				}
 			}
 			fflush(stderr);
@@ -858,19 +902,19 @@ namespace loguru
 #endif
 
 		if (mode == FileMode::Append) {
-			fprintf(file, "\n\n\n\n\n");
+			fprintf_utf8(file, "\n\n\n\n\n");
 		}
 		if (!s_arguments.empty()) {
-			fprintf(file, "arguments: %s\n", s_arguments.c_str());
+			fprintf_utf8(file, "arguments: %s\n", s_arguments.c_str());
 		}
 		if (s_current_dir[0] != '\0') {
-			fprintf(file, "Current dir: %s\n", s_current_dir);
+			fprintf_utf8(file, "Current dir: %s\n", s_current_dir);
 		}
-		fprintf(file, "File verbosity level: %d\n", verbosity);
+		fprintf_utf8(file, "File verbosity level: %d\n", verbosity);
 		if (g_preamble_header) {
 			char preamble_explain[LOGURU_PREAMBLE_WIDTH];
 			print_preamble_header(preamble_explain, sizeof(preamble_explain));
-			fprintf(file, "%s\n", preamble_explain);
+			fprintf_utf8(file, "%s\n", preamble_explain);
 		}
 		fflush(file);
 
@@ -1476,28 +1520,31 @@ namespace loguru
 		if (verbosity <= g_stderr_verbosity) {
 			if (g_colorlogtostderr && s_terminal_has_color) {
 				if (verbosity > Verbosity_WARNING) {
-					fprintf(stderr, "%s%s%s%s%s%s%s%s\n",
-						terminal_reset(),
-						terminal_dim(),
-						message.preamble,
-						message.indentation,
-						verbosity == Verbosity_INFO ? terminal_reset() : "", // un-dim for info
-						message.prefix,
-						message.message,
-						terminal_reset());
+					fprintf_utf8(stderr, "%s%s%s%s%s%s%s%s\n",
+				                     terminal_reset(),
+				                     terminal_dim(),
+				                     message.preamble,
+				                     message.indentation,
+				                     verbosity == Verbosity_INFO ? terminal_reset() : "", // un-dim for info
+				                     message.prefix,
+				                     message.message,
+				                     terminal_reset());
 				} else {
-					fprintf(stderr, "%s%s%s%s%s%s%s\n",
-						terminal_reset(),
-						verbosity == Verbosity_WARNING ? terminal_yellow() : terminal_red(),
-						message.preamble,
-						message.indentation,
-						message.prefix,
-						message.message,
-						terminal_reset());
+					fprintf_utf8(stderr, "%s%s%s%s%s%s%s\n",
+				                     terminal_reset(),
+				                     verbosity == Verbosity_WARNING ? terminal_yellow() : terminal_red(),
+				                     message.preamble,
+				                     message.indentation,
+				                     message.prefix,
+				                     message.message,
+				                     terminal_reset());
 				}
 			} else {
-				fprintf(stderr, "%s%s%s%s\n",
-					message.preamble, message.indentation, message.prefix, message.message);
+				fprintf_utf8(stderr, "%s%s%s%s\n",
+			                     message.preamble,
+			                     message.indentation,
+			                     message.prefix,
+			                     message.message);
 			}
 
 			if (g_flush_interval_ms == 0) {

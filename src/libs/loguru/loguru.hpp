@@ -57,7 +57,8 @@ Website: www.ilikebigbits.com
 	* Version 2.0.0 - 2018-09-22 - Split loguru.hpp into loguru.hpp and loguru.cpp
 	* Version 2.1.0 - 2019-09-23 - Update fmtlib + add option to loguru::init to NOT set main thread name.
 	* Version 2.2.0 - 2020-07-31 - Replace LOGURU_CATCH_SIGABRT with struct SignalOptions
-	*                 2023-08-13 - fix PVS Studio warnings (change by DOSBox Staging Team)
+	*                 2023-08-13 - Fix PVS Studio warnings (change by DOSBox Staging Team)
+	*                 2024-08-23 - Ensure logs are printed out as UTF-8 on Windows console
 
 # Compiling
 	Just include <loguru.hpp> where you want to use Loguru.
