@@ -65,7 +65,7 @@ public:
 
 	MidiDeviceType GetDeviceType() const override
 	{
-		return MidiDeviceType::BuiltIn;
+		return MidiDeviceType::Internal;
 	}
 
 	MIDI_RC ListAll(Program* caller) override;

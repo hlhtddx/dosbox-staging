@@ -32,7 +32,7 @@ enum class MIDI_RC : int {
 	ERR_DEVICE_LIST_NOT_SUPPORTED = -2,
 };
 
-enum class MidiDeviceType { BuiltIn, External };
+enum class MidiDeviceType { Internal, External };
 
 class MidiHandler {
 public:
