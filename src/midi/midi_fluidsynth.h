@@ -47,7 +47,7 @@ public:
 
 	MidiDeviceType GetDeviceType() const override
 	{
-		return MidiDeviceType::BuiltIn;
+		return MidiDeviceType::Internal;
 	}
 
 	bool Open(const char *conf) override;
