@@ -74,6 +74,7 @@ uint8_t MIDI_message_len_by_status[256] = {
 
 #include "midi_fluidsynth.h"
 #include "midi_mt32.h"
+#include "midi_soundcanvas.h"
 
 #if defined(MACOSX)
 	#include "midi_coreaudio.h"
@@ -99,12 +100,17 @@ static void register_handlers()
 {
 	deregister_handlers();
 
+	// Internal MIDI synths
 #if C_FLUIDSYNTH
 	handlers.emplace_back(std::make_unique<MidiHandlerFluidsynth>());
 #endif
 #if C_MT32EMU
 	handlers.emplace_back(std::make_unique<MidiHandler_mt32>());
 #endif
+
+	handlers.emplace_back(std::make_unique<MidiHandler_SoundCanvas>());
+
+	// External MIDI devices
 #if C_COREMIDI
 	handlers.emplace_back(std::make_unique<MidiHandler_coremidi>());
 #endif
@@ -595,7 +601,7 @@ bool MIDI_Available()
 }
 
 // We'll adapt the RtMidi library, eventually, so hold off any substantial
-// rewrites on the MIDI stuff until then to unnecessary work.
+// rewrites on the MIDI stuff until then to avoid unnecessary work.
 class MIDI final {
 public:
 	MIDI(Section* configuration)
@@ -644,7 +650,8 @@ public:
 			for (const auto& handler : handlers) {
 				// FluidSynth or MT-32 are opt-in only
 				if (!(handler->GetName() == "fluidsynth" ||
-				      handler->GetName() == "mt32")) {
+				      handler->GetName() == "mt32" ||
+				      handler->GetName() == "soundcanvas")) {
 					if (open_handler(handler.get())) {
 						break;
 					}
@@ -706,6 +713,8 @@ static void register_midi_text_messages()
 {
 	MSG_Add("MIDI_DEVICE_LIST_NOT_SUPPORTED", "Listing not supported");
 	MSG_Add("MIDI_DEVICE_NOT_CONFIGURED", "Device not configured");
+	MSG_Add("MIDI_DEVICE_NO_SUPPORTED_MODELS", "No supported models present");
+	MSG_Add("MIDI_DEVICE_NO_MODEL_ACTIVE", "No model is currently active");
 }
 
 static MIDI* test;
@@ -736,40 +745,45 @@ void init_midi_dosbox_settings(Section_prop& secprop)
 	        "Set where MIDI data from the emulated MPU-401 MIDI interface is sent\n"
 	        "('auto' by default):");
 
+	str_prop->SetOptionHelp("auto",
+	                        "  auto:         Either one of the internal MIDI synthesisers (if 'midiconfig'\n"
+	                        "                is set to 'mt32', 'soundcanvas', or 'fluidsynth'), or a MIDI\n"
+	                        "                device external to DOSBox (any other 'midiconfig' value).\n"
+	                        "                This is the default behaviour.");
+
+	str_prop->SetOptionHelp("mt32",
+	                        "  mt32:         The internal Roland MT-32 synthesiser (see [mt32] section).");
+
+	str_prop->SetOptionHelp("soundcanvas",
+	                        "  soundcanvas:  The internal Roland SC-55 synthesiser (see [soundcanvas]\n"
+	                        "                section).");
+
+	str_prop->SetOptionHelp("fluidsynth",
+	                        "  fluidsynth:   The internal FluidSynth MIDI synthesiser (SoundFont player)\n"
+	                        "                (see [fluidsynth] section).");
+
 	str_prop->SetOptionHelp("coremidi",
-	                        "  coremidi:    Any device that has been configured in the macOS\n"
-	                        "               Audio MIDI Setup.");
+	                        "  coremidi:     Use a device configured in the macOS Audio MIDI Setup.");
 
 	str_prop->SetOptionHelp("coreaudio",
-	                        "  coreaudio:   Use the built-in macOS MIDI synthesiser.");
+	                        "  coreaudio:    Use the built-in macOS MIDI synthesiser.");
 
 	str_prop->SetOptionHelp("win32",
-	                        "  win32:       Use the Win32 MIDI playback interface.");
+	                        "  win32:        Use the Win32 MIDI playback interface.");
 
 	str_prop->SetOptionHelp("oss",
-	                        "  oss:         Use the Linux OSS MIDI playback interface.");
+	                        "  oss:          Use the Linux OSS MIDI playback interface.");
 
 	str_prop->SetOptionHelp("alsa",
-	                        "  alsa:        Use the Linux ALSA MIDI playback interface.");
+	                        "  alsa:         Use the Linux ALSA MIDI playback interface.");
 
-	str_prop->SetOptionHelp(
-	        "fluidsynth",
-	        "  fluidsynth:  The built-in FluidSynth MIDI synthesizer (SoundFont player).\n"
-	        "               See the [fluidsynth] section for detailed configuration.");
-
-	str_prop->SetOptionHelp(
-	        "mt32",
-	        "  mt32:        The built-in Roland MT-32 synthesizer.\n"
-	        "               See the [mt32] section for detailed configuration.");
-	str_prop->SetOptionHelp(
-	        "auto",
-	        "  auto:        Either one of the built-in MIDI synthesisers (if `midiconfig` is\n"
-	        "               set to 'fluidsynth' or 'mt32'), or a MIDI device external to\n"
-	        "               DOSBox (any other 'midiconfig' value). This might be a software\n"
-	        "               synthesizer or physical device. This is the default behaviour.");
-	str_prop->SetOptionHelp("none", "  none:        Disable MIDI output.");
+	str_prop->SetOptionHelp("none", "  none:         Disable MIDI output.");
 	str_prop->Set_values({
-		"auto",
+		"auto", "mt32", "soundcanvas",
+#if C_FLUIDSYNTH
+		        "fluidsynth",
+#endif
+
 #if defined(MACOSX)
 	#if C_COREMIDI
 		        "coremidi",
@@ -785,22 +799,24 @@ void init_midi_dosbox_settings(Section_prop& secprop)
 #if C_ALSA
 		        "alsa",
 #endif
-#if C_FLUIDSYNTH
-		        "fluidsynth",
-#endif
-		        "mt32", "none"
+		        "none"
 	});
 
 	str_prop = secprop.Add_string("midiconfig", when_idle, "");
 	str_prop->Set_help(
 	        "Configuration options for the selected MIDI interface (unset by default).\n"
-	        "This is usually the ID or name of the MIDI synthesizer you want\n"
-	        "to use (find the ID/name with the DOS command 'MIXER /LISTMIDI').\n"
+	        "This can be either the name of the internal MIDI synthesiser to use (if\n"
+	        "'mididevice' is set to 'auto'), or the ID or name of an external MIDI\n"
+	        "interface. You don't need to use the full name; the first interface that\n"
+	        "contains the string specified in 'mididevice' will be selected. Run the DOS\n"
+	        "command 'MIXER /LISTMIDI' to find out the list of available MIDI interfaces on\n"
+	        "your system.\n"
 	        "Notes:");
 
-	str_prop->SetOptionHelp("fluidsynth_or_mt32emu",
-	                        "  - This option has no effect when using the built-in synthesizers\n"
-	                        "    ('mididevice = fluidsynth' or 'mididevice = mt32').");
+	str_prop->SetOptionHelp(
+	        "internal",
+	        "  - This option has no effect when using the internal synthesisers\n"
+	        "    ('mididevice' set to  'mt32', 'soundcanvas', or 'fluidsynth').");
 
 	str_prop->SetOptionHelp("coreaudio",
 	                        "  - When using 'coreaudio', you can specify a SoundFont here.");
@@ -817,9 +833,7 @@ void init_midi_dosbox_settings(Section_prop& secprop)
 	        "    In that case, add 'delaysysex' (e.g. 'midiconfig = 2 delaysysex').");
 
 	str_prop->SetEnabledOptions({
-#if (C_FLUIDSYNTH == 1 || C_MT32EMU == 1)
-		"fluidsynth_or_mt32emu",
-#endif
+		"internal",
 #if C_COREAUDIO
 		        "coreaudio",
 #endif

@@ -244,6 +244,8 @@ void FLUID_AddConfigSection(const ConfigPtr& conf);
 void MT32_AddConfigSection(const ConfigPtr& conf);
 #endif
 
+void SOUNDCANVAS_AddConfigSection(const ConfigPtr& conf);
+
 void MIDI_AddConfigSection(const ConfigPtr& conf);
 
 #endif
