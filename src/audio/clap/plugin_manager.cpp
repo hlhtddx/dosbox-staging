@@ -131,7 +131,7 @@ void PluginManager::EnumeratePlugins()
 	constexpr auto OnlyRegularFiles = false;
 
 	for (const auto& [dir, plugin_names] :
-	     GetFilesInResource(dir, ".clap", OnlyRegularFiles)) {
+	     get_resource_dir_entries(dir, ".clap", OnlyRegularFiles)) {
 
 		for (const auto& name : plugin_names) {
 			auto path = dir / name;
