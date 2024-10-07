@@ -26,7 +26,6 @@
 #ifdef WIN32
 
 #include <windows.h>
-#include <libloaderapi.h>
 
 using dynlib_handle = HINSTANCE;
 
@@ -34,7 +33,7 @@ using dynlib_handle = HINSTANCE;
 // a reference to it.
 inline dynlib_handle dynlib_open(const std_fs::path& path) noexcept
 {
-	return LoadLibraryA(path.c_str());
+	return LoadLibraryA(path.string().c_str());
 }
 
 // Retrieves the address of an exported function of the dynamic-link library by
@@ -42,7 +41,7 @@ inline dynlib_handle dynlib_open(const std_fs::path& path) noexcept
 inline void* dynlib_get_symbol(dynlib_handle lib, const char* name) noexcept
 {
 	// returns a FARPROC, which is just a void pointer
-	return GetProcAddress(lib, name);
+	return reinterpret_cast<void *>(GetProcAddress(lib, name));
 }
 
 // Decrement the reference counter of the dynamic-link library. If it reaches

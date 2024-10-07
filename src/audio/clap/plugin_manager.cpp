@@ -67,7 +67,7 @@ static std::pair<dynlib_handle, const clap_plugin_entry_t*> load_plugin(
 		return {};
 	}
 
-	plugin_entry->init(path.c_str());
+	plugin_entry->init(path.string().c_str());
 	return {lib, plugin_entry};
 }
 
