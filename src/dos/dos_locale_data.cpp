@@ -65,6 +65,7 @@ std::string KeyboardLayoutInfoEntry::GetMsgName() const
 
 // clang-format off
 const std::map<std::string, std::vector<uint16_t>> LocaleData::BundledCpiContent = {
+	// Main FreeDOS code pages pack
 	{ "EGA.CPI",     { 437, 850, 852, 853, 857, 858 } },
 	{ "EGA2.CPI",    { 775, 859, 1116, 1117, 1118, 1119 } },
 	{ "EGA3.CPI",    { 771, 772, 808, 855, 866, 872 } },
@@ -83,26 +84,24 @@ const std::map<std::string, std::vector<uint16_t>> LocaleData::BundledCpiContent
 	{ "EGA16.CPI",   { 858, 3021, 30005, 30022, 30031, 30032 } },
 	{ "EGA17.CPI",   { 862, 864, 30034, 30033, 30039, 30040 } },
 	{ "EGA18.CPI",   { 856, 3846, 3848 } },
-
-//	TODO: Add support for the following FreeDOS CPX files:
-
-//	{ "EGAISO.CPI",  { 819, 912, 913, 923, 58163, 61235 } },
-//	{ "EGA2ISO.CPI", { 819, 901, 914, 921, 901, 58258, 61235 } },
-//	{ "EGA3ISO.CPI", { 819, 902, 919, 922, 61235, 63283 } },
-//	{ "EGA4ISO.CPI", { 819, 59187, 60211, 61235, 65500, 65501 } },
-//	{ "EGA5ISO.CPI", { 813, 819, 920, 61235, 65504 } },
-//	{ "EGA6ISO.CPI", { 915, 1124, 58259, 59283, 65502, 65503 } },
-
-//	{ "EGAKOI.CPI",  { 878, 58222, 59246, 60270, 61294, 62318 } },
-//	{ "EGA2KOI.CPI", { 878, 63342 } },
-
-//	{ "EGAMAC.CPI",  { 1275, 1282, 1284, 1285, 58619, 58630 } },
-//	{ "EGA2MAC.CPI", { 1275, 1280, 1281, 1283, 1286, 58627 } },
-
-//	{ "EGAWIN.CPI",  { 1250, 1252, 1257, 1270, 1361, 58601 } },
-//	{ "EGA2WIN.CPI", { 1252, 1253, 1254, 58596, 58598, 65506 } },
-//	{ "EGA3WIN.CPI", { 1251, 58595, 59619, 60643, 61667, 62691 } },
-//	{ "EGA4WIN.CPI", { 1252, 59620 } },
+	// ISO code pages pack
+	{ "EGAISO.CPI",  { 819, 912, 913, 923, 58163, 61235 } },
+	{ "EGA2ISO.CPI", { 819, 901, 914, 921, 58258, 61235 } },
+	{ "EGA3ISO.CPI", { 819, 902, 919, 922, 61235, 63283 } },
+	{ "EGA4ISO.CPI", { 819, 59187, 60211, 61235, 65500, 65501 } },
+	{ "EGA5ISO.CPI", { 813, 819, 920, 61235, 65504 } },
+	{ "EGA6ISO.CPI", { 915, 1124, 58259, 59283, 65502, 65503 } },
+	// KOI Cyrillic code pages pack
+	{ "EGAKOI.CPI",  { 878, 58222, 59246, 60270, 61294, 62318 } },
+	{ "EGA2KOI.CPI", { 878, 63342 } },
+	// MacOS code pages pack
+	{ "EGAMAC.CPI",  { 1275, 1282, 1284, 1285, 58619, 58630 } },
+	{ "EGA2MAC.CPI", { 1275, 1280, 1281, 1283, 1286, 58627 } },
+	// Windows code pages pack
+	{ "EGAWIN.CPI",  { 1250, 1252, 1257, 1270, 1361, 58601 } },
+	{ "EGA2WIN.CPI", { 1252, 1253, 1254, 58596, 58598, 65506 } },
+	{ "EGA3WIN.CPI", { 1251, 58595, 59619, 60643, 61667, 62691 } },
+	{ "EGA4WIN.CPI", { 1252, 59620 } },
 };
 // clang-format on
 
