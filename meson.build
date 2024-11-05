@@ -1343,7 +1343,7 @@ executable(
 
 # create a library so we can test things inside DOSBOX dep path
 libdosbox = static_library(
-    'dosbox',
+    'libdosbox',
     ['src/dosbox.cpp'],
     include_directories: incdir,
     dependencies: internal_deps + third_party_deps,

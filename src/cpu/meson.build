@@ -77,6 +77,8 @@ libcpu_sources = files(
     'core_full.cpp',
     'core_normal.cpp',
     'core_prefetch.cpp',
+    'core_llvm.cpp',
+    'core_llvm/core_llvm_runner.cpp',
     'core_simple.cpp',
     'cpu.cpp',
     'flags.cpp',

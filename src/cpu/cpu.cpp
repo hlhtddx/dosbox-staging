@@ -54,6 +54,9 @@ CPU_Regs cpu_regs = {};
 CPUBlock cpu      = {};
 Segments Segs     = {};
 
+Bits CPU_Core_LLVM_Run() noexcept;
+Bits CPU_Core_LLVM_Trap_Run() noexcept;
+
 // Current cycles values
 std::atomic<int> CPU_Cycles    = 0;
 std::atomic<int> CPU_CycleLeft = CpuCyclesRealModeDefault;
@@ -3040,7 +3043,8 @@ public:
 
 		} else if (cpu_core == "full") {
 			cpudecoder = &CPU_Core_Full_Run;
-
+		} else if (cpu_core == "llvm") {
+			cpudecoder = &CPU_Core_LLVM_Run;
 		} else if (cpu_core == "auto") {
 			cpudecoder = &CPU_Core_Normal_Run;
 
