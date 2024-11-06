@@ -1106,6 +1106,227 @@ std::string Section_line::GetPropValue(const std::string&) const
 	return NO_SUCH_PROPERTY;
 }
 
+std::string FormatStringForPrint(const std::string& str)
+{
+	std::string result;
+	for (const char c : str) {
+		switch (c) {
+		case '\n': result += "\\n"; break;
+		case '\t': result += "\\t"; break;
+		case '\\': result += "\\\\"; break;
+		case '\"': result += "\\\""; break;
+//		case '\'': result += "\\\'"; break;
+		default: result += c; break;
+		}
+	}
+	return result;
+}
+
+bool Config::WriteConfigToJson(const std_fs::path& path) const
+{
+	char temp[50];
+	char helpline[256];
+
+	const char* ChangeValuesType[] = {
+	        "Always",
+	        "WhenIdle",
+	        "OnlyAtStart",
+	        "Deprecated",
+	        "DeprecatedButAllowed"
+	};
+
+	const char* ValueTypes[] = {
+	        "None",
+	        "HexString",
+	        "Boolean",
+	        "Integer",
+	        "Text",
+	        "Double",
+	        "Current"
+	};
+
+	FILE* outfile = fopen(path.string().c_str(), "w+t");
+	if (!outfile) {
+		return false;
+	}
+
+	fprintf(outfile, "[\n");
+	auto first_section = true;
+	for (auto tel = sectionlist.cbegin(); tel != sectionlist.cend(); ++tel) {
+		if (first_section) {
+			first_section = false;
+		} else {
+			fprintf(outfile, "\t},\n");
+		}
+
+		fprintf(outfile, "\t{\n");
+
+		// Print section header
+		safe_strcpy(temp, (*tel)->GetName());
+		lowcase(temp);
+		fprintf(outfile, "\t\t\"name\": \"%s\",\n", temp);
+		fprintf(outfile, "\t\t\"properties\": [\n");
+
+		Section_prop* sec = dynamic_cast<Section_prop*>(*tel);
+		if (sec) {
+			Property* p;
+			int i           = 0;
+			size_t maxwidth = 0;
+
+			while ((p = sec->Get_prop(i++))) {
+				maxwidth = std::max(maxwidth, p->propname.length());
+			}
+
+			i = 0;
+			auto first_prop = true;
+			while ((p = sec->Get_prop(i++))) {
+				if (p->IsDeprecated()) {
+					continue;
+				}
+
+				if (!first_prop) {
+					fprintf(outfile, "\t\t\t},\n");
+				} else {
+					first_prop = false;
+				}
+
+				fprintf(outfile, "\t\t\t{\n");
+
+				fprintf(outfile,
+				        "\t\t\t\t\"%s\": \"%s\",\n",
+				        "name",
+				        p->propname.c_str());
+
+				fprintf(outfile,
+				        "\t\t\t\t\"%s\": \"%s\",\n",
+				        "changeable",
+				        ChangeValuesType[p->GetChange()]);
+
+				auto help = p->GetHelpUtf8();
+				std::string::size_type pos = std::string::npos;
+				char prefix[80];
+
+				while ((pos = help.find('\n', pos + 1)) !=
+				       std::string::npos) {
+					help.replace(pos, 1, prefix);
+				}
+
+				// Percentage signs are encoded as '%%' in the
+				// config descriptions because they are sent
+				// through printf-like functions (e.g.,
+				// WriteOut()). So we need to de-escape them before
+				// writing them into the config.
+				auto s = FormatStringForPrint(format_str(help));
+
+				fprintf(outfile,
+				        "\t\t\t\t\"%s\": \"%s\",\n",
+				        "help_str",
+				        s.c_str());
+
+				auto default_value = p->GetDefaultValue();
+				const char* type_string = ValueTypes[default_value.type];
+				switch(default_value.type) {
+				case Value::V_STRING:
+				case Value::V_HEX:
+					fprintf(outfile,
+					        "\t\t\t\t\"%s\": {\n"
+					        "\t\t\t\t\t\t\"%s\": \"%s\"\n"
+					        "\t\t\t\t},\n",
+					        "default_value",
+					        type_string,
+					        FormatStringForPrint(default_value.ToString()).c_str());
+					break;
+				default:
+					fprintf(outfile,
+					        "\t\t\t\t\"%s\": {\n"
+					        "\t\t\t\t\t\t\"%s\": %s\n"
+					        "\t\t\t\t},\n",
+					        "default_value",
+					        type_string,
+					        default_value.ToString().c_str());
+					break;
+				}
+
+				auto print_values = [&](const char* values_msg_key,
+				                        const std::vector<Value>& values) {
+					if (values.empty()) {
+						fprintf(outfile, "\t\t\t\t\"%s\": [],\n", "available_values");
+						return;
+					}
+					fprintf(outfile, "\t\t\t\t\"%s\": [", "available_values");
+
+					std::vector<Value>::const_iterator it =
+					        values.begin();
+
+					while (it != values.end()) {
+						if ((*it).ToString() != "%u") {
+							// Hack hack hack. else
+							// we need to modify
+							// GetValues, but that
+							// one is const...
+							if (it != values.begin()) {
+								fputs(",", outfile);
+							}
+							auto value = *it;
+							switch(value.type) {
+							case Value::V_STRING:
+							case Value::V_HEX:
+								fprintf(outfile,
+								        " \"%s\"\n",
+								        FormatStringForPrint(value.ToString()).c_str());
+								break;
+							default:
+								fprintf(outfile,
+								        " \"%s\"\n",
+								        value.ToString().c_str());
+								break;
+							}
+						}
+						++it;
+					}
+					fprintf(outfile, "],\n");
+				};
+				print_values("available_values", p->GetValues());
+				Prop_int* int_prop = dynamic_cast<Prop_int*>(p);
+				int min = -1;
+				int max = -1;
+				if (int_prop) {
+					min = int_prop->GetMin();
+					max = int_prop->GetMax();
+				}
+				fprintf(outfile,
+				        "\t\t\t\t\"%s\": %d,\n",
+				        "min",
+				        min);
+				fprintf(outfile,
+				        "\t\t\t\t\"%s\": %d\n",
+				        "max",
+				        max);
+
+			}
+		} else {
+			fprintf(outfile,
+			        "\t\t\t{\n"
+			        "\t\t\t\t\"name\": \"autoexec\",\n"
+			        "\t\t\t\t\"changeable\": \"OnlyAtStart\",\n"
+			        "\t\t\t\t\"help_str\": \"autoexec\",\n"
+			        "\t\t\t\t\"default_value\": {\n"
+			        "\t\t\t\t\t\"CmdLine\": []\n"
+			        "\t\t\t\t},\n"
+			        "\t\t\t\t \"available_values\": [],\n"
+			        "\t\t\t\t\"min\": -1,\n"
+			        "\t\t\t\t\"max\": -1\n");
+		}
+		fprintf(outfile, "\t\t\t}\n");
+		fprintf(outfile, "\t\t]\n");
+	}
+	fprintf(outfile, "\t}\n");
+	fprintf(outfile, "]\n");
+
+	fclose(outfile);
+	return true;
+}
+
 bool Config::WriteConfig(const std_fs::path& path) const
 {
 	char temp[50];

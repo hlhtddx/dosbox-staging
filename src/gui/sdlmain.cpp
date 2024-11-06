@@ -4846,6 +4846,10 @@ int sdl_main(int argc, char* argv[])
 					            primary_config_path.string().c_str());
 				}
 			}
+			auto json_path = primary_config_path.parent_path() / "default.json";
+			control->WriteConfigToJson(json_path);
+			LOG_MSG("CONFIG: Created primary config json file '%s'",
+			        json_path.string().c_str());
 		}
 
 		// After DOSBOX_Init() is done, all the conf sections have been
